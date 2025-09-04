@@ -1,11 +1,4 @@
 ---
-- name: Fail if pbs_debian_version_codename is not defined, empty or invalid
-  fail:
-    msg: "pbs_debian_version_codename must be one of: bullseye, bookworm, trixie"
-  when: pbs_debian_version_codename is not defined
-        or (pbs_debian_version_codename | string).strip() == ''
-        or (pbs_debian_version_codename | string).strip() not in ['bullseye', 'bookworm', 'trixie']
-
 - name: Install dependencies
   apt:
     name: 
@@ -15,13 +8,13 @@
 
 - name: Add Proxmox public key
   apt_key:
-    url: "https://enterprise.proxmox.com/debian/proxmox-release-{{ pbs_debian_version_codename }}.gpg"
+    url: "https://enterprise.proxmox.com/debian/proxmox-release-{{ ansible_facts['lsb']['codename'] }}.gpg"
     state: present
   when: not ansible_check_mode
 
 - name: Add Proxmox repository
   apt_repository:
-    repo: "deb http://download.proxmox.com/debian/pbs {{ pbs_debian_version_codename }} pbs-no-subscription"
+    repo: "deb http://download.proxmox.com/debian/pbs {{ ansible_facts['lsb']['codename'] }} pbs-no-subscription"
     state: present
 
 - name: Install PBS

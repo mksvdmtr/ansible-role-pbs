@@ -11,11 +11,6 @@ The role is designed to use a directory as a datastore. It is recommended to pre
 
 Role Variables
 --------------
-
-### Required:
-```yaml
-pbs_debian_version_codename: bullseye|bookworm|trixie
-```
 ### Optional
 ```yaml
 # if ldap realm configuring need

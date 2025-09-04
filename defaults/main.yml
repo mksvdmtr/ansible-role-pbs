@@ -1,5 +1,4 @@
 ---
-pbs_debian_version_codename: ""
 pbs_datastore_name: "store1"
 pbs_datastore_path: "/pbs"
 pbs_gc_schedule: "Sun 05:00"
