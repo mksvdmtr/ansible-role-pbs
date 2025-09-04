@@ -1,0 +1,79 @@
+---
+- name: Check if proxmox-backup-manager exists
+  stat:
+    path: /usr/sbin/proxmox-backup-manager
+  register: proxmox_backup_manager
+
+- name: Fail if proxmox-backup-manager does not exist
+  fail:
+    msg: "The proxmox-backup-manager binary does not exist."
+  when: not proxmox_backup_manager.stat.exists
+
+- name: Get current pbs datastores
+  command: proxmox-backup-manager datastore list --output-format json
+  register: datastore_list
+  changed_when: False
+
+- name: Parse pbs datastores
+  set_fact:
+    store_exists: "{{ pbs_datastore_name in datastore_list.stdout | from_json | map(attribute='name') | list }}"
+
+- name: Create datastore
+  command: "proxmox-backup-manager datastore create {{ pbs_datastore_name }} {{ pbs_datastore_path }} --gc-schedule {{ pbs_gc_schedule | quote }} --keep-monthly {{ pbs_keep_monthly }} --keep-weekly {{ pbs_keep_weekly }} --keep-daily {{ pbs_keep_daily }} --comment 'Ansible managed'"
+  register: create_datastore_results
+  changed_when: create_datastore_results.rc == 0
+  when: not store_exists
+
+- name: Get current pbs users
+  command: proxmox-backup-manager user list --output-format json
+  register: pbs_user_list
+  changed_when: false
+  tags:
+    - users
+
+- name: Parse pbs user list
+  set_fact:
+    existing_pbs_users: "{{ pbs_user_list.stdout | default('[]') | from_json | map(attribute='userid') | list }}"
+  tags:
+    - users
+
+- name: Create pbs users
+  loop: "{{ pbs_users }}"
+  when: item.name not in existing_pbs_users and item.password is defined
+  command: > 
+    proxmox-backup-manager user create {{ item.name }} 
+    --password {{ item.password | quote }} 
+    --comment 'Ansible managed'
+  register: create_user_results
+  changed_when: create_user_results.rc == 0
+  tags:
+    - users
+
+- name: Render acl.cfg
+  template:
+    src: acl.cfg.j2
+    dest: /etc/proxmox-backup/acl.cfg
+    owner: root
+    group: backup
+    mode: '0640'
+    backup: true
+  tags:
+    - users
+
+- name: Render verification.cfg
+  template:
+    src: verification.cfg.j2
+    dest: /etc/proxmox-backup/verification.cfg
+    owner: root
+    group: backup
+    mode: '0640'
+    backup: true
+
+- name: Render prune.cfg
+  template:
+    src: prune.cfg.j2
+    dest: /etc/proxmox-backup/prune.cfg
+    owner: root
+    group: backup
+    mode: '0640'
+    backup: true

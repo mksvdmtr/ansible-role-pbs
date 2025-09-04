@@ -1,0 +1,8 @@
+prune: 001
+	keep-last 1
+	keep-daily {{ pbs_keep_daily }}
+	keep-monthly {{ pbs_keep_monthly }}
+	keep-weekly {{ pbs_keep_weekly }}
+	schedule {{ pbs_prune_schedule }}
+	store {{ pbs_datastore_name }}
+	comment Ansible managed

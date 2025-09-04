@@ -1,0 +1,25 @@
+galaxy_info:
+  author: "Dmitry Maksakov"
+  description: > 
+    Deploys and configures Proxmox Backup Server (PBS) including repositories, 
+    packages, datastore setup, user and ACL management
+    https://pbs.proxmox.com/docs/introduction.html
+
+  license: "MIT"
+
+  min_ansible_version: 2.1
+
+  platforms:
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+        - trixie
+  galaxy_tags:
+    - pbs
+    - proxmox
+    - proxmo-backup-server
+    - virtualization
+    - backup
+
+dependencies: []

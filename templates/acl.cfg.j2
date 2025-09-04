@@ -1,0 +1,3 @@
+{% for u in pbs_users %}
+acl:1:/datastore:{{ u.name }}:{{ u.role }}
+{% endfor %}

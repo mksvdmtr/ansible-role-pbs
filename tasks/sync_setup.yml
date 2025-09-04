@@ -1,0 +1,78 @@
+---
+- name: Get fingerprints
+  shell: "proxmox-backup-manager cert info | grep Fingerprint | awk '{print $3}'"
+  register: fp
+  changed_when: false
+
+- name: Prepare pair line 
+  set_fact:
+    line: "{{ inventory_hostname }}|{{ ansible_ssh_host }}|{{ fp.stdout }}"
+
+- name: Cleanup fingerprints
+  delegate_to: localhost
+  ansible.builtin.file:
+    path: /tmp/pbs_fingetprints.txt
+    state: absent
+
+- name: Collect fingerprints
+  delegate_to: localhost
+  become: false
+  ansible.builtin.lineinfile:
+    path: /tmp/pbs_fingetprints.txt
+    line: "{{ line }}"
+    create: yes
+    state: present
+    mode: 0644
+  loop: "{{ groups[group_names[0]] }}"
+
+- name: Read fingerprints file
+  delegate_to: localhost
+  slurp:
+    src: /tmp/pbs_fingetprints.txt
+  register: fingerprints_file
+
+- name: Decode fingerprints content
+  delegate_to: localhost
+  set_fact:
+    fingerprints_raw: "{{ fingerprints_file.content | b64decode }}"
+
+- name: Split fingerprints
+  delegate_to: localhost
+  set_fact:
+    fingerprints: "{{ fingerprints_raw.splitlines() }}"
+  run_once: true
+
+- name: Get current pbs remotes
+  command: proxmox-backup-manager remote list --output-format json
+  register: pbs_remotes_list
+  changed_when: false
+
+- name: Parse pbs remote list
+  set_fact:
+    existing_pbs_remotes: "{{ pbs_remotes_list.stdout | default('[]') | from_json | map(attribute='name') | list }}"
+
+- name: Create remotes
+  command: > 
+    proxmox-backup-manager remote create {{ item.split('|')[0] }} 
+    --host {{ item.split('|')[1] }} --auth-id {{ pbs_sync_user }} 
+    --password {{ (pbs_users | selectattr('name', 'equalto', pbs_sync_user) | map(attribute='password') | list)[0] }} 
+    --fingerprint {{ item.split('|')[2] }} --comment 'Ansible managed'
+  loop: "{{ fingerprints }}"
+  when: item.split('|')[0] != ansible_hostname and item.split('|')[0] not in existing_pbs_remotes
+
+- name: Get current pbs sync-jobs
+  command: proxmox-backup-manager sync-job list --output-format json
+  register: pbs_sync_job_list
+  changed_when: false
+
+- name: Parse pbs sync-jobs list
+  set_fact:
+    existing_pbs_sync_job: "{{ pbs_sync_job_list.stdout | default('[]') | from_json | map(attribute='id') | list }}"
+
+- name: Create sync-jobs
+  command: > 
+    proxmox-backup-manager sync-job create {{ item.split('|')[0] }} --remote {{ item.split('|')[0] }}
+    --remote-store {{ pbs_datastore_name }} --store {{ pbs_datastore_name }} 
+    --schedule {{ pbs_sync_schedule }} --owner {{ pbs_sync_backups_owner }} --comment "Ansible managed"
+  loop: "{{ fingerprints }}"
+  when: item.split('|')[0] != ansible_hostname and item.split('|')[0] not in existing_pbs_sync_job

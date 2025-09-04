@@ -1,0 +1,11 @@
+{% for domain in pbs_domains_cfg %}
+ldap: {{ domain.name }}
+  {% if domain.attributes %}
+  {% for k, v in domain.attributes.items() %}
+  {% if k != 'bind-password' %}
+  {{ k }} {{ v }}
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+
+{% endfor %}

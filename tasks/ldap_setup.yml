@@ -1,0 +1,18 @@
+---
+- name: Render domains.cfg
+  template:
+    src: domains.cfg.j2
+    dest: /etc/proxmox-backup/domains.cfg
+    owner: root
+    group: backup
+    mode: '0640'
+    backup: true
+
+- name: Render ldap_passwords.json
+  template:
+    src: ldap_passwords.json.j2
+    dest: /etc/proxmox-backup/ldap_passwords.json
+    owner: root
+    group: root
+    mode: '0600'
+    backup: true

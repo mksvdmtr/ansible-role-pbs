@@ -1,0 +1,40 @@
+---
+- name: Install packages
+  ansible.builtin.include_tasks:
+    file: install.yml
+    apply:
+      tags:
+        - install
+  tags:
+    - install
+
+- name: Setup PBS
+  ansible.builtin.include_tasks:
+    file: basic_setup.yml
+    apply:
+      tags:
+        - basic_setup
+  tags:
+    - basic_setup
+    - users
+  when: not ansible_check_mode
+
+- name: Setup nodes sync
+  ansible.builtin.include_tasks:
+    file: sync_setup.yml
+    apply:
+      tags:
+        - sync_setup
+  tags:
+    - sync_setup
+  when: ansible_play_hosts | length > 1 and not ansible_check_mode
+
+- name: Setup ldap
+  ansible.builtin.include_tasks:
+    file: ldap_setup.yml
+    apply:
+      tags:
+        - ldap_setup
+  tags:
+    - ldap_setup
+  when: pbs_domains_cfg is defined
