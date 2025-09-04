@@ -10,6 +10,7 @@
 
 - name: Cleanup fingerprints
   delegate_to: localhost
+  become: false
   ansible.builtin.file:
     path: /tmp/pbs_fingetprints.txt
     state: absent
@@ -27,17 +28,20 @@
 
 - name: Read fingerprints file
   delegate_to: localhost
+  become: false
   slurp:
     src: /tmp/pbs_fingetprints.txt
   register: fingerprints_file
 
 - name: Decode fingerprints content
   delegate_to: localhost
+  become: false
   set_fact:
     fingerprints_raw: "{{ fingerprints_file.content | b64decode }}"
 
 - name: Split fingerprints
   delegate_to: localhost
+  become: false
   set_fact:
     fingerprints: "{{ fingerprints_raw.splitlines() }}"
   run_once: true
@@ -76,3 +80,4 @@
     --schedule {{ pbs_sync_schedule }} --owner {{ pbs_sync_backups_owner }} --comment "Ansible managed"
   loop: "{{ fingerprints }}"
   when: item.split('|')[0] != ansible_hostname and item.split('|')[0] not in existing_pbs_sync_job
+
