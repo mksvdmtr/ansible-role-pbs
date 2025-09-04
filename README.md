@@ -45,6 +45,6 @@ Example Playbook
 ```yaml
 - hosts: pbs
   roles:
-      - { role: proxmox-backup-server }
+      - { role: ansible-role-pbs }
 ```
 
